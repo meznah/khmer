@@ -8,6 +8,7 @@
 #include <set>
 #include <vector>
 */
+
 #include <time.h>
 #include "outline_index.hh"
 
@@ -40,11 +41,11 @@ int main(int argc,char *argv[])
 
         else if (sw=="-help") {
             std::cout<<"the following are the prgram arguments\n";
-            std::cout<<"\t-tf  TagedKhmerFileName\n";
-            std::cout<<"\t-rf  ReadsFileName\n";
-            std::cout<<"\t-qf  QueryFileName\n";
+            std::cout<<"\t-tf  Taged Khmer File Name\n";
+            std::cout<<"\t-rf  Reads File Name\n";
+            std::cout<<"\t-qf  Query File Name\n";
             std::cout<<"\t-ks  k-mer Size\n";
-            std::cout<<"\t-ds   density\n";
+            std::cout<<"\t-ds  density\n";
             std::cout<<"\t-help disply this help\n";
             return 0;
         } else {
@@ -55,10 +56,10 @@ int main(int argc,char *argv[])
     }
 
     //step 1: creaate reads binary file
-    //std::cout<<"Creating reads binary file ....\n";
+    std::cout<<"Creating reads binary file ....\n";
     std::string readsfilenamebin=readsfilename+".bin";
-    //convertFastaToBin(readsfilename,readsfilenamebin);
-    //std::cout<<"\tdone...\n";
+    convertFastaToBin(readsfilename,readsfilenamebin);
+    std::cout<<"\tdone...\n";
     
     unsigned int ksize   = 0;
     unsigned int density = 0;
@@ -66,9 +67,9 @@ int main(int argc,char *argv[])
     //step 2: choose the seeds
     ksize = kmer_size ; density = density_size ;
     std::set<khmer::HashIntoType> all_seeds;
-    //std::cout<<"Sampling k-mer every "<<density<<" positions\n";
-    //all_seeds =  consume_fasta_and_tag( readsfilename, ksize, density);	
-    //std::cout<<"\tdensity:"<<density<<"\t"<<"#num of seeds:"<<all_seeds.size()<<std::endl;
+    std::cout<<"Sampling k-mer every "<<density<<" positions\n";
+    all_seeds =  consume_fasta_and_tag( readsfilename, ksize, density);	
+    std::cout<<"\tdensity:"<<density<<"\t"<<"#num of seeds:"<<all_seeds.size()<<std::endl;
     /*for (std::set<khmer::HashIntoType>::iterator pi = all_seeds.begin(); pi != all_seeds.end();
          pi++) {
     	std::cout<<*pi<<" ";
@@ -79,15 +80,13 @@ int main(int argc,char *argv[])
     std::string outfilename=readsfilename+".seedset.d"+density_str;
     //if the seeds is created then it is will be default tags file 
     taggedkmerfilename=outfilename;
-    //std::cout<<"\tsaving the seeds set to file:"<<outfilename<<std::endl;
-    //save_seedset(outfilename,all_seeds,ksize, density);
+    std::cout<<"\tsaving the seeds set to file:"<<outfilename<<std::endl;
+    save_seedset(outfilename,all_seeds,ksize, density);
  
     //step 3: load the seeds
     std::cout<<"load seeds k-mers and sort them ...\n";
     std::vector<khmer::HashIntoType> sorted_kmer_vector;
-    //unsigned int save_ksize=0;
-    //unsigned int  _tag_density=0; 
-    
+       
     load_seedset(taggedkmerfilename,sorted_kmer_vector,ksize,density);
 
     /*std::cout<<"test if we correctly load the the seeds\n";
@@ -98,23 +97,23 @@ int main(int argc,char *argv[])
     */
 
     //step 4: build the index
-    //std::cout<<"Build the index ...\n";
+    std::cout<<"Build the index ...\n";
     //start the timer
     time_t start,end;
     double diff;
     time (&start);
-    //build_index(readsfilenamebin,density,sorted_kmer_vector,ksize);
+    build_index(readsfilenamebin,density,sorted_kmer_vector,ksize);
     time (&end);
     diff = difftime (end,start);
-    //printf ("\tIt took you %.2lf seconds to build the tree.\n", diff );
-    //std::cout<<"\tdone...\n";
+    printf ("\tIt took you %.2lf seconds to build the tree.\n", diff );
+    std::cout<<"\tdone...\n";
   
     //step 5: Query process
     std::cout<<"Start Load_Queries...\n";
     std::string indexfilename;	std::string statfilename;
     indexfilename=readsfilenamebin+".index.d"+density_str;
     statfilename=readsfilename+".stat.d"+density_str;
-  #if 0
+  
     //the query file is set of seq sampled from input file
     std::fstream inQfile(queryfilename.c_str(),std::ios::in);
     std::fstream out_stat_file(statfilename.c_str(),std::ios::out);
@@ -137,6 +136,8 @@ int main(int argc,char *argv[])
    using namespace khmer:: read_parsers;
    IParser * parser  = IParser::get_parser(queryfilename.c_str());
    Read read;
+
+   //start the query proces
    while(!parser->is_complete())  {
 	read = parser->get_next_read();
 	std::transform(read.sequence.begin(), read.sequence.end(), read.sequence.begin(), ::toupper);
@@ -173,7 +174,7 @@ int main(int argc,char *argv[])
 	} // iterat over q-seq
     std::cout<<"\tdone...\n";
     out_stat_file.close(); 
-#endif
+
     bool enable_stat=true;
     //test the create_stat fucntion
     if (enable_stat)	{
@@ -184,6 +185,6 @@ int main(int argc,char *argv[])
     // the sampling process
     //samplefromfile();
     //samplefrombinary();
-    
+
     return 0;
 }

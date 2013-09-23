@@ -1,4 +1,4 @@
-//this is the codes for the mini lib function
+//this is the codes for the mini igned ib function
 #include "khmer.hh"
 
 #include "outline_index.hh"
@@ -12,7 +12,7 @@ void khmer::convertFastaToBin(std::string readsFileName,std::string readsBinFile
     readBinFile.open(readsBinFileName.c_str(),std::ios::out|std::ios::binary);
     readBinFile.clear();
 
-    long total_reads = 0;
+    unsigned long long total_reads = 0;
 
     using namespace khmer:: read_parsers;
 
@@ -39,26 +39,26 @@ void khmer::convertFastaToBin(std::string readsFileName,std::string readsBinFile
     readBinFile.close();
 }
 //------- Reads IO operations ----------
-void khmer::WriteToDiskHeader(std::fstream& readsBinFile,long* numReads)
+void khmer::WriteToDiskHeader(std::fstream& readsBinFile,unsigned long long* numReads)
 {
     //std::cout<<"WriteToDiskHeader\n";
     readsBinFile.seekp(0);
-    readsBinFile.write((char*) numReads, sizeof(long));
+    readsBinFile.write((char*) numReads, sizeof(unsigned long long));
 }
-void khmer::ReadFromDiskHeader(std::fstream& readsBinFile,long* numReads)
+void khmer::ReadFromDiskHeader(std::fstream& readsBinFile,unsigned long long* numReads)
 {
     //std::cout<<"ReadFromDiskHeader\n";
     readsBinFile.seekg(0);
-    readsBinFile.read((char*)numReads,sizeof(long));
+    readsBinFile.read((char*)numReads,sizeof(unsigned long long));
 }
 
-void khmer::WriteToDiskRead(std::fstream& readsBinFile,readNode* read,long pageNum)
+void khmer::WriteToDiskRead(std::fstream& readsBinFile,readNode* read,unsigned long long pageNum)
 {
     //std::cout<<"in WriteToDiskRead\n";
     readsBinFile.seekp(pageNum*blockSizeRead);
     readsBinFile.write((char*) read, sizeof(readNode));
 }
-void khmer::ReadFromDiskRead(std::fstream& readsBinFile,readNode* read,long pageNum)
+void khmer::ReadFromDiskRead(std::fstream& readsBinFile,readNode* read,unsigned long long pageNum)
 {
     //std::cout<<"in ReadFromDiskRead\n";
     readsBinFile.seekg(pageNum*blockSizeRead);
@@ -119,7 +119,7 @@ void khmer::print_tagset(std::string infilename, std::vector<khmer::HashIntoType
 //------- seedSet IO ---------------------
 std::set<khmer::HashIntoType>  khmer:: consume_fasta_and_tag(std::string readsFileName,unsigned int save_ksize, unsigned int tag_density){
  
-  //std::cout<<"in consume_fasta_and_tag\n";
+  std::cout<<"\tin consume_fasta_and_tag\n";
   unsigned long long total_reads = 0;
   using namespace khmer:: read_parsers;
 
@@ -128,7 +128,7 @@ std::set<khmer::HashIntoType>  khmer:: consume_fasta_and_tag(std::string readsFi
   std::set<khmer::HashIntoType> all_seeds;
   std::set<khmer::HashIntoType> new_seeds;
 
-  while(!parser->is_complete()/*&& (total_reads<3)*/)  {
+  while(!parser->is_complete()/*&& (total_reads<1)*/)  {
         read = parser->get_next_read();
         total_reads++;
 	//KHMER_EXTRA_SANITY_CHECKS flag in kmer iterators  must be set
@@ -142,33 +142,41 @@ std::set<khmer::HashIntoType>  khmer:: consume_fasta_and_tag(std::string readsFi
   return all_seeds;
 }
 std::set<khmer::HashIntoType> khmer:: consume_sequence_and_tag(std::string seq , unsigned int save_ksize, unsigned int tag_density ){
-  //std::cout<<"consume_sequence_and_tag\n";
+  std::cout<<"\t\tconsume_sequence_and_tag\n";
  
   std::set<khmer::HashIntoType> new_seeds;
   khmer::KMerIterator kmers(seq.c_str(), save_ksize);
   khmer::HashIntoType kmer;
   unsigned int since = 1 ; //UINT_MAX;
   int cnt=0;
-  /*std::cout<<"save_ksize:"<<save_ksize<<" tag_density:"<<tag_density<<std::endl;
+  std::cout<<"save_ksize:"<<save_ksize<<" tag_density:"<<tag_density<<std::endl;
   std::cout<<"the sent seq is:";
   std::cout<<seq<<std::endl;
   std::cout<<"the length of the seq is:"<<seq.length()<<std::endl;
-  */
+   
+  kmer = kmers.next(); cnt++;
+  std::cout<<"this k-mer is chosen at location :"<<cnt<<std::endl;
+  std::cout<<"h-k-mer:"<<kmer<<std::endl;
+  std::cout<<_revhash(kmer, save_ksize)<<std::endl;
+  new_seeds.insert(kmer);
+  since = 1 ;
+
+  
   while(!kmers.done()) {
 	cnt++;
  	kmer = kmers.next();
 	if (since ==  tag_density) {
-		/*std::cout<<"this k-mer is chosen at location :"<<cnt<<std::endl;
+		std::cout<<"this k-mer is chosen at location :"<<cnt<<std::endl;
 		std::cout<<"h-k-mer:"<<kmer<<std::endl;
 		std::cout<<_revhash(kmer, save_ksize)<<std::endl;
-		*/
+		
 		new_seeds.insert(kmer);
 		since = 1 ;
 		}
 	else {	since++;}
 	}
-  //std::cout<<"local # seeds:"<<new_seeds.size()<<std::endl;
-  //std::cout<<"# all possible k-mers:"<<cnt<<std::endl;
+  std::cout<<"local # seeds:"<<new_seeds.size()<<std::endl;
+  std::cout<<"# all possible k-mers:"<<cnt<<std::endl;
   return new_seeds;
 }
 
@@ -250,24 +258,24 @@ void khmer::build_index(std::string readsBinFileName, unsigned int density,  std
     //std::cout<<"in building the index...\n";
     std::fstream readBinFile;
     readBinFile.open(readsBinFileName.c_str(),std::ios::in|std::ios::binary);
-    long numReads=0;
+    unsigned long long numReads=0;
     ReadFromDiskHeader(readBinFile,&numReads);
     //std::cout<<"\tnum of reads in the file:"<<numReads<<std::endl;
     unsigned int numTkmer=sortedKhmerVector.size();
     //std::cout<<"\tnum of tagged khmers:"<<numTkmer<<std::endl;
     
-    int  classSize[numTkmer];		//the number of reads belong to this id
-    long index;
-    std::vector<long>* ptr[numTkmer];		//array of ptrs to set of read ids
+    unsigned long long  classSize[numTkmer];		//the number of reads belong to this id
+    unsigned long long index;
+    std::vector<unsigned long long>* ptr[numTkmer];		//array of ptrs to set of read ids
 
-    for (int i=0; i< numTkmer; i++) {
+    for (unsigned int i=0; i< numTkmer; i++) {
         classSize[i]=0;
-        ptr[i]=new std::vector<long>;
+        ptr[i]=new std::vector<unsigned long long>;
     }
 
     readNode readBin;
 
-    int seqLen=0;
+    unsigned int seqLen=0;
     std::string  seq="";
     std::string _seq="";
     /*for(int i=0; i<seqLen; i++) {
@@ -275,14 +283,14 @@ void khmer::build_index(std::string readsBinFileName, unsigned int density,  std
     }*/
     bool read_is_tagged;		//test if a read is successfully tagged
     //unsigned long error_cnt=0;	//keep track of the number of reads not tagged
-    for (long i=0; i<numReads; i++) {
+    for (unsigned long long i=0; i<numReads; i++) {
         //std::cout<<" read #:"<<i+1<<std::endl;
 
         //retreive a read number i
         ReadFromDiskRead(readBinFile,&readBin,i+1);
         seqLen=readBin.getSeqLength();
         seq=readBin.getSeq();
-        for(int j=0; j<seqLen; j++) {
+        for(unsigned int j=0; j<seqLen; j++) {
             _seq+=seq[j];
         }
 
@@ -326,7 +334,7 @@ void khmer::build_index(std::string readsBinFileName, unsigned int density,  std
     //std::cout<<std::endl;
     
     std::cout<<"\tsaving the index information...\n";
-    int indexSize=0;
+   
     //save the index informaiton
     std::string outfilename= readsBinFileName+".index.d"+density_str;
     std::ofstream outfile(outfilename.c_str(), std::ios::binary);
@@ -334,7 +342,6 @@ void khmer::build_index(std::string readsBinFileName, unsigned int density,  std
     //wrtie the size of taged k-mer sorted array
     outfile.write((const char *) &numTkmer, sizeof(numTkmer));
     //std::cout<<numTkmer<<std::endl;
-    indexSize+=sizeof(numTkmer);
 
     //write the taged k-mer sorted array
     khmer::HashIntoType * buf = new khmer::HashIntoType[numTkmer];
@@ -344,7 +351,7 @@ void khmer::build_index(std::string readsBinFileName, unsigned int density,  std
     }
     //std::cout<<std::endl;
     outfile.write((const char *) buf, sizeof(HashIntoType) * numTkmer);
-    indexSize+=sizeof(HashIntoType) * numTkmer;
+   
     delete buf;
 
     //create the array of acummulated sizes
@@ -357,24 +364,22 @@ void khmer::build_index(std::string readsBinFileName, unsigned int density,  std
     }
     outfile.write((const char *) buff, sizeof(unsigned int) * numTkmer);
     delete buff;
-    indexSize+=sizeof(unsigned int) * numTkmer;
+   
     //std::cout<<std::endl;
 
     //write set of associated arrays that map t-k-mer with a set of read ids
-    long read_id;
-    int cnt=0;
+    unsigned long long read_id;
+    
     for (long i=0; i< numTkmer ; i++) {
         //std::cout<<"\nT "<<i+1<<":";
-        for (std::vector<long>::iterator it = ptr[i]->begin() ; it != ptr[i]->end(); ++it) {
+        for (std::vector<unsigned long long>::iterator it = ptr[i]->begin() ; it != ptr[i]->end(); ++it) {
             //std::cout << ' ' << *it;
             read_id=*it;
-            outfile.write((const char *) &read_id, sizeof(long));
-	    cnt++;
+            outfile.write((const char *) &read_id, sizeof(unsigned long long));
         }
         //	std::cout<<"/";
     }
-    indexSize+=sizeof(long)*cnt;
-    std::cout<<"\tthe size of the index is:"<<indexSize<<std::endl;
+    
     //std::cout<<std::endl;
     outfile.close();
     readBinFile.close();
@@ -609,8 +614,8 @@ unsigned int khmer::sim_measure(std::string seq1, std::string seq2, unsigned int
     return score ;
 }
 //------- Sampling Procedures ---------------
-void khmer::samplefromfile(){
-    std::cout<<" in samplefromfile\n";
+void khmer::samplefromfile_reads(){
+    std::cout<<" in samplefromfile_reads\n";
     std::string   readsfilename="", queryfilename="";
     int num_q=0;
    
@@ -648,17 +653,31 @@ void khmer::samplefromfile(){
    
     queryfile.close();
 }
+void khmer::samplefromfile_kmers(){
+    std::cout<<" in samplefromfile_kmers\n";
+    std::string   readsfilename="", queryfilename="";
+    int num_q=0,num_per_read=0;
+
+    std::cout<<"enter the reads file name:";     std::cin>>readsfilename;       std::cout<<std::endl;
+    std::cout<<"enter the query file name:";     std::cin>>queryfilename;       std::cout<<std::endl;
+    std::cout<<"enter the number of qureies:",          std::cin>>num_q;        std::cout<<std::endl; 
+    std::cout<<"enter the upper bound in the number of kmers can be sampled from a read:";
+    std::cin>>num_per_read;	std::cout<<std::endl;
+    
+    std::fstream queryfile;
+    queryfile.open(queryfilename.c_str(),std::ios::out);
+
+    long total_kmers = 0;
+    unsigned int k  = 1, cnt = 0, i = 0;
+
+    using namespace khmer:: read_parsers;
+    IParser *                 parser  = IParser::get_parser(readsfilename.c_str());
+    Read read;
+    //select reandoly a read then select randomly the number of k-mers to be sample 
+}
 void khmer::samplefrombinary(){
     std::cout<<"in sampling from binary sequnce file\n";
-    /*
-    this function  create set of qureirs randomly from a given input file
- input: 1- binary file where each entry contins DNA sequnace
-        2- size of the smaple, the number of the reads to be sampled
-        3- fixed length of the sample, it is optinal in case we want to extract an equal leng
-th substrings
-        4- if length is not providede then random length will be chosen
-        5- full flag is used to smaple the whole read not a substring from a read
-    */
+   
     std::string   readsBinFileName="", queryFileName="";
     int num_q=0;
     //mandatory inputs for all cases
@@ -668,7 +687,7 @@ th substrings
     
     std::fstream readBinFile;
     readBinFile.open(readsBinFileName.c_str(),std::ios::in|std::ios::binary);
-    long numReads=0;
+    unsigned long long numReads=0;
     ReadFromDiskHeader(readBinFile,&numReads);
     std::cout<<"\tnum of reads in the file:"<<numReads<<std::endl;
     std::fstream queryFile;
@@ -677,40 +696,25 @@ th substrings
     //some cases
     bool full_length=true;
     int n;
+
     std::cout<<"default sampling is the whole read,\n";
-    std::cout<<" if you want sub-sting enter 0 otherwise enter 1:"; std::cin>>n;	std::cout<<std::endl;
-    if (n==0) full_length=false;
-   //we need to do the follwoing
-   //randomly select k , the skips over the reads, to slect a read 
-   //if we are in case one we are don
-   //if we are in case two , then either fixed length of variable length
-   //in fixed length case we have L, then select reandomly a pos in (s,e-L+1) then str=seq[pos,pos+l] 
-   //if substring is vaialbe, then selct the pos in(s,e-1) and then select l in (1,e-pos+1) then str=seq[pos,pos+l)
-   long location=0; readNode readBin; 
-   if (full_length){
-	std::cout<<"in smapling the entire reads mode\n";
-	unsigned int k; k=rand()%100;
-	std::cout<<"enter the skipping paramter k value:"; std::cin>>k; std::cout<<std::endl;//skipping paramater
+  
+    long location=0; 
+    readNode readBin; 
+    
+    if (full_length){
+	unsigned int k=1;
+	std::cout<<"enter the skipping paramter k value:"; std::cin>>k; std::cout<<std::endl;
+	std::cout<<"make sure that k*num_q < data size \n";
 	for (unsigned int i=0; i<num_q; i++){
-		location+=(long)((i+k)%numReads)+1;
-		//std::cout<<location<<std::endl;
+		location+=k;
+		std::cout<<location<<std::endl;
 		readBin.nullfy();
                 ReadFromDiskRead(readBinFile,&readBin,location);
-                readBin.printSeq(queryFile); queryFile<<std::endl;
-	}
+                queryFile<<">read"<<i+1<<std::endl;
+		readBin.printSeq(queryFile); queryFile<<std::endl;
+		}
 
-	}
-   if (!full_length){
-	std::cout<<" in smapling sub strings mode\n";
-	std::cout<<" the defualt is to sample variable length sub strings\n";
-	std::cout<<" if you want to smaple with fixed length please enter the length othewise enter 0:";
-	std::cin>>n; std::cout<<std::endl;
-	if (n==0){
-		std::cout<<"We are in smapling substring with variable length\n";
-	}
-	else	{
-		std::cout<<" we are in sampling substring with fixed length equal to "<<n<<std::endl;
-	}
 	}
 
    readBinFile.close();

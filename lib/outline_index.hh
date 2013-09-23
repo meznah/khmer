@@ -18,23 +18,23 @@
 namespace khmer
 {
 
-typedef long ReadID;				//we may need long long if we have many reads
-typedef unsigned int khmerID;			//each khmer has a rank
-typedef std::set<HashIntoType> TaggedKhmerSet; //if we decide to change taggedkhmer from vector to set data str
-typedef std::set<ReadID> SetReadId;
-typedef std::map<khmerID, SetReadId*> TagsToReadsMap;
+typedef long ReadID;				//we may need unsinged long long if we have many reads
+typedef unsigned int khmer_id;			//each khmer has a rank
+typedef std::set<HashIntoType> tagged_khmer_set; //if we decide to change taggedkhmer from vector to set data str
+typedef std::set<ReadID> set_read_id;
+//typedef std::map<khmerID, set_read_id*> tags_to_reads_map;
 //typedef std::map<khmerID,SetReadId*>;  //assing for each khmerID a set of reads Iet
 
 class readNode
 {
 protected:
-    long _pageNum;
+    unsigned long long _pageNum;
     char _name[maxNameLength];
     char _seq[maxSeqLength];
-    int _nameLength;
-    int _seqLength;
+    unsigned int _nameLength;
+    unsigned int _seqLength;
     void init() {
-        _pageNum=-1;
+        _pageNum=0;
         _nameLength=_seqLength=0;
         for (int i=0; i<maxNameLength; i++) {
             _name[i]='*';
@@ -53,13 +53,13 @@ public:
         ;
     }
     //accessors to get values
-    long	getPageNum()	{
+    unsigned long long	getPageNum()	{
         return _pageNum;
     }
-    int 	getNameLength()	{
+    unsigned int 	getNameLength()	{
         return _nameLength;
     }
-    int 	getSeqLength()	{
+    unsigned int 	getSeqLength()	{
         return _seqLength;
     }
     char *	getName()	{
@@ -70,22 +70,22 @@ public:
     }
 
     //accessors to set values
-    void setPageNum(long newPageNum)	{
+    void setPageNum(unsigned long long newPageNum)	{
         _pageNum=newPageNum;
     }
-    void setNameLength(int newNameLength)	{
+    void setNameLength(unsigned int newNameLength)	{
         _nameLength=newNameLength;
     }
-    void setSeqLength(int newSeqLength)	{
+    void setSeqLength(unsigned int newSeqLength)	{
         _seqLength=newSeqLength;
     }
-    void setName(int newNameLength,std::string  newName)	{
+    void setName(unsigned int newNameLength,std::string  newName)	{
         for (int i=0; i<newNameLength; i++) {
             _name[i]=newName[i];
         }
         this->setNameLength(newNameLength);
     }
-    void setSeq(int newSeqLength,std::string  newSeq) {
+    void setSeq(unsigned int newSeqLength,std::string  newSeq) {
         for (int i=0; i<newSeqLength; i++) {
             _seq[i]=newSeq[i];
         }
@@ -99,12 +99,12 @@ public:
         std::cout<<_pageNum;
     }
     void printName()	{
-        for (int i=0; i<_nameLength; i++)	{
+        for (unsigned int i=0; i<_nameLength; i++)	{
             std::cout<<_name[i];
         }
     }
     void printSeq()		{
-        for (int i=0; i<_seqLength ; i++)	{
+        for (unsigned int i=0; i<_seqLength ; i++)	{
             std::cout<<_seq[i];
         }
     }
@@ -112,12 +112,12 @@ public:
         outFile<<_pageNum;
     }
     void printName(std::fstream& outFile)	{
-        for (int i=0; i<_nameLength; i++)	{
+        for (unsigned int i=0; i<_nameLength; i++)	{
             outFile<<_name[i];
         }
     }
     void printSeq(std::fstream& outFile)	{
-        for (int i=0; i<_seqLength ; i++)	{
+        for (unsigned int i=0; i<_seqLength ; i++)	{
             outFile<<_seq[i];
         }
     }
@@ -129,11 +129,11 @@ public:
 //----------------------------------------------
 void convertFastaToBin(std::string readsFileName,std::string readBinFileName);
 //------------ Reads IO operations ---------------
-void WriteToDiskHeader(std::fstream& readBinFile,long* numReads);
-void ReadFromDiskHeader(std::fstream& readBinFile,long* numReads);
+void WriteToDiskHeader(std::fstream& readBinFile,unsigned long long* numReads);
+void ReadFromDiskHeader(std::fstream& readBinFile,unsigned long long* numReads);
 
-void WriteToDiskRead(std::fstream& readBinFile,readNode* read,long pageNum);
-void ReadFromDiskRead(std::fstream& readBinFile,readNode* read,long pageNum);
+void WriteToDiskRead(std::fstream& readBinFile,readNode* read,unsigned long long pageNum);
+void ReadFromDiskRead(std::fstream& readBinFile,readNode* read,unsigned long long pageNum);
 //----------- tagSet IO operation ------------
 void load_tagset(std::string infilename,std::vector<khmer::HashIntoType>& mykhmervector, unsigned int& k,unsigned int& _tag_density );
 void print_tagset(std::string infilename,std::vector<khmer::HashIntoType>& mykhmervector,unsigned int save_ksize);
@@ -154,7 +154,8 @@ void retrieve_read_by_id(std::string infilename, std::set<long>& reads_ids, std:
 void retrieve_read_by_id(std::string readsBinFileName, std::set<long>& reads_ids, std::map<long,std::string>& mymap);
 unsigned int sim_measure(std::string seq1, std::string seq2, unsigned int save_ksize);
 //------ sampling procedure --------
-void samplefromfile();
+void samplefromfile_reads();
+void samplefromfile_kmers();
 void samplefrombinary();
 //------- stat ----------
 void create_stat(std::string statfilename,unsigned int num_seeds,unsigned int density);
